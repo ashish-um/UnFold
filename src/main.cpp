@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QIcon>
 #include "app/MainWindow.h"
 
 int main(int argc, char *argv[])
@@ -7,6 +8,7 @@ int main(int argc, char *argv[])
     app.setApplicationName("Unfold");
     app.setOrganizationName("Unfold");
     app.setApplicationVersion("1.0.0");
+    app.setWindowIcon(QIcon(":/icons/logo.png"));
 
     // Set dark fusion style
     app.setStyle("Fusion");

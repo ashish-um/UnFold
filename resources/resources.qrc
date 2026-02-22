@@ -6,5 +6,6 @@
         <file>icons/lock.svg</file>
         <file>icons/symlink.svg</file>
         <file>icons/loadmore.svg</file>
+        <file>icons/logo.png</file>
     </qresource>
 </RCC>

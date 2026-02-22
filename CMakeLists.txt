@@ -43,6 +43,7 @@ add_executable(${PROJECT_NAME} WIN32
     ${SOURCES}
     ${HEADERS}
     ${RESOURCES}
+    resources/app.rc
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
