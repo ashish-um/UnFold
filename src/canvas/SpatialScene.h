@@ -19,6 +19,7 @@ public:
     ~SpatialScene();
 
     void spawnDriveNodes();
+    void resetToHome();
     void expandNode(NodeItem *node);
     void collapseNode(NodeItem *node);
     void collapseAll();

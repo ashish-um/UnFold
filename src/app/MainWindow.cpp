@@ -115,8 +115,7 @@ void MainWindow::setupConnections()
 
 void MainWindow::onNavigateHome()
 {
-    m_scene->collapseAll();
-    m_scene->spawnDriveNodes();
+    m_scene->resetToHome();
     m_view->resetView();
 }
 

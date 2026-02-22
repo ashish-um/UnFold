@@ -37,7 +37,6 @@ SpatialScene::~SpatialScene()
 
 void SpatialScene::spawnDriveNodes()
 {
-    // Enumerate all available drives on Windows
     const auto volumes = QStorageInfo::mountedVolumes();
     double xOffset = 0;
 
@@ -45,16 +44,15 @@ void SpatialScene::spawnDriveNodes()
         if (!vol.isValid() || !vol.isReady())
             continue;
 
-        QString rootPath = vol.rootPath();
+        QString rootPath = QDir::toNativeSeparators(vol.rootPath());
         if (m_nodeMap.contains(rootPath))
             continue;
 
-        QFileInfo info(rootPath);
+        QFileInfo info(vol.rootPath());
         NodeItem *driveNode = createNode(info, nullptr);
         driveNode->setPos(xOffset, 0);
         driveNode->setIsDrive(true);
 
-        // Set display name
         QString label = vol.displayName();
         if (label.isEmpty())
             label = rootPath;
@@ -64,6 +62,27 @@ void SpatialScene::spawnDriveNodes()
 
         xOffset += 250;
     }
+}
+
+void SpatialScene::resetToHome()
+{
+    m_activeExpandedNode = nullptr;
+
+    // Remove every node and edge from the scene
+    QList<NodeItem *> allNodesCopy = m_nodeMap.values();
+    for (NodeItem *node : allNodesCopy) {
+        EdgeItem *edge = node->edgeToParent();
+        if (edge) {
+            removeItem(edge);
+            delete edge;
+        }
+        removeItem(node);
+        delete node;
+    }
+    m_nodeMap.clear();
+
+    // Re-spawn fresh drive nodes at origin
+    spawnDriveNodes();
 }
 
 void SpatialScene::expandNode(NodeItem *node)
