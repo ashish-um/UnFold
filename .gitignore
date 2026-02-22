@@ -1,0 +1,30 @@
+# Build output
+build/
+cmake-build-*/
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.user
+*.swp
+*.swo
+*~
+
+# Compiled objects
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Qt generated
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+*_autogen/
+
+# OS files
+Thumbs.db
+.DS_Store
+desktop.ini
