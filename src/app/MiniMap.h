@@ -18,12 +18,14 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 private slots:
     void updateViewport();
 
 private:
     void navigateTo(const QPoint &pos);
+    void repositionInParent();
 
     SpatialView *m_mainView;
     QTimer m_updateTimer;

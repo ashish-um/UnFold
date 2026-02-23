@@ -5,6 +5,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QScrollBar>
+#include <QEvent>
 
 MiniMap::MiniMap(SpatialScene *scene, SpatialView *mainView, QWidget *parent)
     : QGraphicsView(scene, parent)
@@ -22,9 +23,10 @@ MiniMap::MiniMap(SpatialScene *scene, SpatialView *mainView, QWidget *parent)
         "border: 1px solid #4a4a4a; border-radius: 6px; }"
     );
 
-    // Position in bottom-right corner
+    // Watch parent for resize to stay anchored at bottom-right
     if (parent) {
-        move(parent->width() - width() - 16, parent->height() - height() - 40);
+        parent->installEventFilter(this);
+        repositionInParent();
     }
 
     // Update periodically
@@ -84,4 +86,21 @@ void MiniMap::resizeEvent(QResizeEvent *event)
 {
     QGraphicsView::resizeEvent(event);
     updateViewport();
+}
+
+bool MiniMap::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched == parentWidget() && event->type() == QEvent::Resize) {
+        repositionInParent();
+    }
+    return QGraphicsView::eventFilter(watched, event);
+}
+
+void MiniMap::repositionInParent()
+{
+    if (parentWidget()) {
+        int x = parentWidget()->width() - width() - 12;
+        int y = parentWidget()->height() - height() - 12;
+        move(x, y);
+    }
 }

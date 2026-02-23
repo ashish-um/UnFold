@@ -7,11 +7,13 @@
 
 class EdgeItem;
 class SpatialScene;
+class LayoutEngine;
 
 class NodeItem : public QGraphicsObject
 {
     Q_OBJECT
     Q_PROPERTY(QPointF pos READ pos WRITE setPos)
+    friend class LayoutEngine;
 
 public:
     explicit NodeItem(const QFileInfo &fileInfo, QGraphicsItem *parent = nullptr);
@@ -60,6 +62,9 @@ public:
     // For "Load more" nodes
     QString parentPath() const { return m_parentPath; }
 
+    // For layout engine access during drag re-layout
+    void moveChildrenBy(const QPointF &delta);
+
     static constexpr qreal NODE_WIDTH = 150.0;
     static constexpr qreal NODE_HEIGHT = 56.0;
 
@@ -69,6 +74,7 @@ signals:
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
     void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) override;
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
@@ -96,6 +102,9 @@ private:
     bool m_isLoadMore = false;
     bool m_permissionDenied = false;
     bool m_isHovered = false;
+    bool m_movingChildren = false;
+    bool m_isDragging = false;
+    QPointF m_lastPos;
 
     NodeItem *m_parentNode = nullptr;
     QList<NodeItem *> m_children;

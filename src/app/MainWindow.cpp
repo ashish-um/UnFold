@@ -33,7 +33,7 @@ MainWindow::MainWindow(QWidget *parent)
     setCentralWidget(m_view);
 
     // Create the minimap overlay
-    m_miniMap = new MiniMap(m_scene, m_view, this);
+    m_miniMap = new MiniMap(m_scene, m_view, m_view);
 
     // Create workspace manager
     m_workspaceManager = new WorkspaceManager(this);

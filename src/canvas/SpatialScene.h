@@ -29,6 +29,7 @@ public:
 
     NodeItem *activeExpandedNode() const { return m_activeExpandedNode; }
     bool isInActiveBranch(const NodeItem *node) const;
+    LayoutEngine *layoutEngine() const { return m_layoutEngine; }
 
 signals:
     void nodeSelected(const QString &path);

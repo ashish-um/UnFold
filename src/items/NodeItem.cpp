@@ -1,6 +1,7 @@
 #include "NodeItem.h"
 #include "EdgeItem.h"
 #include "canvas/SpatialScene.h"
+#include "layout/LayoutEngine.h"
 
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
@@ -305,6 +306,7 @@ void NodeItem::removeChild(NodeItem *child)
 void NodeItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
+        m_isDragging = true;
         emit clicked(this);
 
         if (m_spatialScene) {
@@ -312,6 +314,12 @@ void NodeItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
         }
     }
     QGraphicsObject::mousePressEvent(event);
+}
+
+void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
+{
+    m_isDragging = false;
+    QGraphicsObject::mouseReleaseEvent(event);
 }
 
 void NodeItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
@@ -455,7 +463,26 @@ void NodeItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *)
 
 QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant &value)
 {
+    if (change == ItemPositionChange) {
+        m_lastPos = pos();
+    }
     if (change == ItemPositionHasChanged) {
+        // Move descendant nodes
+        if (!m_movingChildren) {
+            QPointF delta = pos() - m_lastPos;
+            if (!delta.isNull()) {
+                m_movingChildren = true;
+                if (m_isDragging && m_isExpanded && m_spatialScene) {
+                    // User is dragging this expanded node:
+                    // re-layout direct children around new position
+                    m_spatialScene->layoutEngine()->relayoutAroundParent(this, delta);
+                } else {
+                    // Programmatic move or non-expanded: rigid translation
+                    moveChildrenBy(delta);
+                }
+                m_movingChildren = false;
+            }
+        }
         // Update connected edges
         if (m_edgeToParent)
             m_edgeToParent->updatePosition();
@@ -465,4 +492,14 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant &value)
         }
     }
     return QGraphicsObject::itemChange(change, value);
+}
+
+void NodeItem::moveChildrenBy(const QPointF &delta)
+{
+    for (NodeItem *child : m_children) {
+        child->m_movingChildren = true;
+        child->moveBy(delta.x(), delta.y());
+        child->m_movingChildren = false;
+        child->moveChildrenBy(delta);
+    }
 }
