@@ -20,12 +20,20 @@ void LayoutEngine::layoutChildren(NodeItem *parent, const QList<NodeItem *> &chi
     int newChildCount = children.size();
     int totalChildren = existingChildCount + newChildCount;
 
+    // Determine direction: if this node is above its parent, expand upward
+    bool flipVertical = false;
+    if (parent->parentNode()) {
+        if (parent->pos().y() < parent->parentNode()->pos().y()) {
+            flipVertical = true;
+        }
+    }
+
     QList<QPointF> positions;
 
     if (totalChildren <= 20) {
-        positions = computeRadialLayout(parentPos, newChildCount, existingChildCount);
+        positions = computeRadialLayout(parentPos, newChildCount, existingChildCount, flipVertical);
     } else {
-        positions = computeGridLayout(parentPos, newChildCount, existingChildCount);
+        positions = computeGridLayout(parentPos, newChildCount, existingChildCount, flipVertical);
     }
 
     // Apply positions with collision resolution
@@ -73,7 +81,7 @@ void LayoutEngine::layoutChildren(NodeItem *parent, const QList<NodeItem *> &chi
     }
 }
 
-QList<QPointF> LayoutEngine::computeRadialLayout(QPointF parentPos, int childCount, int existingChildren)
+QList<QPointF> LayoutEngine::computeRadialLayout(QPointF parentPos, int childCount, int existingChildren, bool flipVertical)
 {
     QList<QPointF> positions;
     if (childCount == 0) return positions;
@@ -129,7 +137,8 @@ QList<QPointF> LayoutEngine::computeRadialLayout(QPointF parentPos, int childCou
             }
 
             qreal x = parentPos.x() + radius * qCos(angle) * (H_SPACING / V_SPACING);
-            qreal y = parentPos.y() + radius * qSin(angle);
+            qreal yOffset = radius * qSin(angle);
+            qreal y = parentPos.y() + (flipVertical ? -yOffset : yOffset);
 
             positions.append(QPointF(x, y));
         }
@@ -138,25 +147,26 @@ QList<QPointF> LayoutEngine::computeRadialLayout(QPointF parentPos, int childCou
     return positions;
 }
 
-QList<QPointF> LayoutEngine::computeGridLayout(QPointF parentPos, int childCount, int existingChildren)
+QList<QPointF> LayoutEngine::computeGridLayout(QPointF parentPos, int childCount, int existingChildren, bool flipVertical)
 {
     QList<QPointF> positions;
 
     int cols = qMin(static_cast<int>(GRID_COLS_MAX), childCount);
     qreal totalWidth = (cols - 1) * H_SPACING;
     qreal startX = parentPos.x() - totalWidth / 2.0;
-    qreal startY = parentPos.y() + V_SPACING;
+    qreal yDir = flipVertical ? -1.0 : 1.0;
+    qreal startY = parentPos.y() + V_SPACING * yDir;
 
     // Offset for existing children rows
     int existingRows = (existingChildren > 0) ? ((existingChildren - 1) / cols + 1) : 0;
-    startY += existingRows * V_SPACING;
+    startY += existingRows * V_SPACING * yDir;
 
     for (int i = 0; i < childCount; ++i) {
         int row = i / cols;
         int col = i % cols;
 
         qreal x = startX + col * H_SPACING;
-        qreal y = startY + row * V_SPACING;
+        qreal y = startY + row * V_SPACING * yDir;
 
         positions.append(QPointF(x, y));
     }
@@ -212,11 +222,19 @@ void LayoutEngine::relayoutAroundParent(NodeItem *parent, const QPointF &delta)
     QPointF parentPos = parent->pos();
     int childCount = collapsedChildren.size();
 
+    // Determine direction relative to grandparent
+    bool flipVertical = false;
+    if (parent->parentNode()) {
+        if (parent->pos().y() < parent->parentNode()->pos().y()) {
+            flipVertical = true;
+        }
+    }
+
     QList<QPointF> positions;
     if (childCount <= 20) {
-        positions = computeRadialLayout(parentPos, childCount, 0);
+        positions = computeRadialLayout(parentPos, childCount, 0, flipVertical);
     } else {
-        positions = computeGridLayout(parentPos, childCount, 0);
+        positions = computeGridLayout(parentPos, childCount, 0, flipVertical);
     }
 
     // Collect all descendants to exclude from collision checks

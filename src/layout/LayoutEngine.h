@@ -23,8 +23,8 @@ public:
     static constexpr qreal GRID_COLS_MAX = 8;
 
 private:
-    QList<QPointF> computeRadialLayout(QPointF parentPos, int childCount, int existingChildren);
-    QList<QPointF> computeGridLayout(QPointF parentPos, int childCount, int existingChildren);
+    QList<QPointF> computeRadialLayout(QPointF parentPos, int childCount, int existingChildren, bool flipVertical = false);
+    QList<QPointF> computeGridLayout(QPointF parentPos, int childCount, int existingChildren, bool flipVertical = false);
     bool hasCollision(const QPointF &pos, const QList<NodeItem *> &exclude) const;
     QPointF resolveCollision(const QPointF &pos, const QList<NodeItem *> &exclude) const;
     void collectDescendants(NodeItem *node, QSet<QGraphicsItem *> &out) const;
