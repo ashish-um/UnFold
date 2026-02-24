@@ -19,3 +19,8 @@ cmake -G Ninja ..
 ninja
 .\Unfold.exe
 ```
+
+## TODO:
+- [ ] Add Tests
+- [ ] All necessary right menu items
+- [ ] Copy paste functionality
