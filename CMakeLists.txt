@@ -39,11 +39,16 @@ set(RESOURCES
     resources/resources.qrc
 )
 
-add_executable(${PROJECT_NAME} WIN32
+if(WIN32)
+    set(PLATFORM_SOURCES resources/app.rc)
+    set(PLATFORM_FLAGS WIN32)
+endif()
+
+add_executable(${PROJECT_NAME} ${PLATFORM_FLAGS}
     ${SOURCES}
     ${HEADERS}
     ${RESOURCES}
-    resources/app.rc
+    ${PLATFORM_SOURCES}
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
