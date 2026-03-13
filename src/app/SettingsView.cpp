@@ -35,6 +35,15 @@ SettingsView::SettingsView(QWidget *parent)
 
     mainLayout->addLayout(formLayout);
 
+    m_loadWorkspaceBtn = new QPushButton("📂 Load Workspace from File...");
+    m_loadWorkspaceBtn->setMinimumWidth(250);
+
+    QHBoxLayout *loadLayout = new QHBoxLayout();
+    loadLayout->addWidget(m_loadWorkspaceBtn);
+    loadLayout->addStretch(1);
+    
+    mainLayout->addLayout(loadLayout);
+
     mainLayout->addStretch(1);
 
     QPushButton *saveBtn = new QPushButton("← Save & Return");
@@ -47,6 +56,7 @@ SettingsView::SettingsView(QWidget *parent)
     mainLayout->addLayout(btnLayout);
 
     connect(m_browseButton, &QPushButton::clicked, this, &SettingsView::onBrowseDirectory);
+    connect(m_loadWorkspaceBtn, &QPushButton::clicked, this, &SettingsView::onLoadWorkspace);
     connect(saveBtn, &QPushButton::clicked, this, &SettingsView::onSaveAndBack);
 
     // Styling
@@ -74,4 +84,9 @@ void SettingsView::onSaveAndBack()
     SettingsManager::instance().setShowHiddenItems(m_hiddenItemsCheck->isChecked());
     SettingsManager::instance().setDefaultDirectory(m_defaultDirEdit->text());
     emit backRequested();
+}
+
+void SettingsView::onLoadWorkspace()
+{
+    emit loadWorkspaceRequested();
 }

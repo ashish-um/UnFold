@@ -50,6 +50,7 @@ void SpatialScene::spawnDriveNodes()
             startNode->setIsDrive(true);
             startNode->setLabel(info.fileName().isEmpty() ? defaultDir : info.fileName() + " (" + defaultDir + ")");
             expandNode(startNode);
+            applySavedState(startNode);
             return;
         }
     }
@@ -75,6 +76,8 @@ void SpatialScene::spawnDriveNodes()
         else
             label = label + " (" + rootPath + ")";
         driveNode->setLabel(label);
+
+        applySavedState(driveNode);
 
         xOffset += 250;
     }
@@ -211,6 +214,28 @@ NodeItem *SpatialScene::nodeForPath(const QString &path) const
     return m_nodeMap.value(QDir::toNativeSeparators(path), nullptr);
 }
 
+void SpatialScene::setSavedNodeState(const QString &path, const QPointF &pos, bool expanded)
+{
+    m_savedNodeStates.insert(QDir::toNativeSeparators(path), {pos, expanded});
+}
+
+void SpatialScene::clearSavedNodeStates()
+{
+    m_savedNodeStates.clear();
+}
+
+void SpatialScene::applySavedState(NodeItem *node)
+{
+    QString path = QDir::toNativeSeparators(node->filePath());
+    if (m_savedNodeStates.contains(path)) {
+        SavedNodeState state = m_savedNodeStates.value(path);
+        node->setPos(state.pos);
+        if (state.isExpanded && !node->isExpanded()) {
+            expandNode(node);
+        }
+    }
+}
+
 QList<NodeItem *> SpatialScene::allNodes() const
 {
     return m_nodeMap.values();
@@ -252,6 +277,10 @@ void SpatialScene::onDirectoryLoaded(const QString &path, const QList<QFileInfo>
 
     // Use layout engine to position children
     m_layoutEngine->layoutChildren(parentNode, newChildren);
+
+    for (NodeItem *child : newChildren) {
+        applySavedState(child);
+    }
 
     int count = entries.size();
     QString msg = QString("Loaded %1 items from %2").arg(count).arg(path);

@@ -16,7 +16,7 @@ WorkspaceManager::WorkspaceManager(QObject *parent)
 {
 }
 
-void WorkspaceManager::save(const QString &filePath, SpatialScene *scene, SpatialView *view)
+QString WorkspaceManager::save(const QString &filePath, SpatialScene *scene, SpatialView *view)
 {
     QJsonObject root;
     root["version"] = 1;
@@ -51,10 +51,15 @@ void WorkspaceManager::save(const QString &filePath, SpatialScene *scene, Spatia
     // Write to file
     QJsonDocument doc(root);
     QFile file(filePath);
+    int lineCount = 0;
     if (file.open(QIODevice::WriteOnly)) {
-        file.write(doc.toJson());
+        QByteArray jsonBytes = doc.toJson();
+        file.write(jsonBytes);
         file.close();
+        lineCount = jsonBytes.count('\n') + 1;
     }
+    
+    return QString("Saved to %1 (%2 lines)").arg(filePath).arg(lineCount);
 }
 
 void WorkspaceManager::load(const QString &filePath, SpatialScene *scene, SpatialView *view)
@@ -71,15 +76,6 @@ void WorkspaceManager::load(const QString &filePath, SpatialScene *scene, Spatia
 
     QJsonObject root = doc.object();
 
-    // Clear current scene
-    scene->collapseAll();
-    // Remove all items
-    QList<NodeItem *> existing = scene->allNodes();
-    for (NodeItem *node : existing) {
-        scene->removeItem(node);
-        delete node;
-    }
-
     // Restore view transform
     if (root.contains("viewTransform")) {
         QJsonObject viewObj = root["viewTransform"].toObject();
@@ -91,10 +87,9 @@ void WorkspaceManager::load(const QString &filePath, SpatialScene *scene, Spatia
         view->setTransform(t);
     }
 
-    // Restore nodes
-    // First pass: create all nodes as drive roots or expand them
-    scene->spawnDriveNodes();
+    scene->clearSavedNodeStates();
 
+    // Cache node states
     if (root.contains("nodes")) {
         QJsonArray nodesArray = root["nodes"].toArray();
 
@@ -113,32 +108,31 @@ void WorkspaceManager::load(const QString &filePath, SpatialScene *scene, Spatia
             double x = nodeObj["x"].toDouble();
             double y = nodeObj["y"].toDouble();
             bool expanded = nodeObj["expanded"].toBool();
-
-            NodeItem *node = scene->nodeForPath(path);
-            if (node) {
-                node->setPos(x, y);
-                if (expanded && !node->isExpanded()) {
-                    scene->expandNode(node);
-                }
-            }
+            scene->setSavedNodeState(path, QPointF(x, y), expanded);
         }
     }
+    
+    // Clear the current scene and spawn drives; they will automatically pick up saved states.
+    scene->resetToHome();
 }
 
-void WorkspaceManager::autoSave(SpatialScene *scene, SpatialView *view)
+QString WorkspaceManager::autoSave(SpatialScene *scene, SpatialView *view)
 {
     QString path = autoSavePath();
     if (!path.isEmpty()) {
-        save(path, scene, view);
+        return save(path, scene, view);
     }
+    return QString("Failed to determine save path.");
 }
 
-void WorkspaceManager::autoLoad(SpatialScene *scene, SpatialView *view)
+bool WorkspaceManager::autoLoad(SpatialScene *scene, SpatialView *view)
 {
     QString path = autoSavePath();
     if (!path.isEmpty() && QFile::exists(path)) {
         load(path, scene, view);
+        return true;
     }
+    return false;
 }
 
 QString WorkspaceManager::autoSavePath() const

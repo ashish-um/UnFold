@@ -14,13 +14,16 @@ public:
 
 signals:
     void backRequested();
+    void loadWorkspaceRequested();
 
 private slots:
     void onBrowseDirectory();
     void onSaveAndBack();
+    void onLoadWorkspace();
 
 private:
     QCheckBox *m_hiddenItemsCheck;
     QLineEdit *m_defaultDirEdit;
     QPushButton *m_browseButton;
+    QPushButton *m_loadWorkspaceBtn;
 };

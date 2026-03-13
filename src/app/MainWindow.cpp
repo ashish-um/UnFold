@@ -50,8 +50,10 @@ MainWindow::MainWindow(QWidget *parent)
     setupStatusBar();
     setupConnections();
 
-    // Spawn initial drive nodes (or start directory)
-    m_scene->spawnDriveNodes();
+    // Attempt to load previous workspace or spawn initial drives
+    if (!m_workspaceManager->autoLoad(m_scene, m_view)) {
+        m_scene->spawnDriveNodes();
+    }
 }
 
 MainWindow::~MainWindow()
@@ -85,10 +87,6 @@ void MainWindow::setupToolBar()
     QAction *saveAction = toolbar->addAction("💾 Save");
     saveAction->setToolTip("Save current workspace");
     connect(saveAction, &QAction::triggered, this, &MainWindow::onSaveWorkspace);
-
-    QAction *loadAction = toolbar->addAction("📂 Load");
-    loadAction->setToolTip("Load a saved workspace");
-    connect(loadAction, &QAction::triggered, this, &MainWindow::onLoadWorkspace);
 
     toolbar->addSeparator();
 
@@ -126,6 +124,7 @@ void MainWindow::setupConnections()
     connect(m_scene, &SpatialScene::statusMessage, m_statusLabel, &QLabel::setText);
     connect(m_scene, &QGraphicsScene::selectionChanged, this, &MainWindow::onSelectionChanged);
     connect(m_settingsView, &SettingsView::backRequested, this, &MainWindow::onCloseSettings);
+    connect(m_settingsView, &SettingsView::loadWorkspaceRequested, this, &MainWindow::onLoadWorkspace);
 }
 
 void MainWindow::onNavigateHome()
@@ -136,12 +135,8 @@ void MainWindow::onNavigateHome()
 
 void MainWindow::onSaveWorkspace()
 {
-    QString path = QFileDialog::getSaveFileName(this, "Save Workspace",
-        QString(), "Spatial Workspace (*.spatial)");
-    if (!path.isEmpty()) {
-        m_workspaceManager->save(path, m_scene, m_view);
-        m_statusLabel->setText("Workspace saved.");
-    }
+    QString status = m_workspaceManager->autoSave(m_scene, m_view);
+    m_statusLabel->setText(status);
 }
 
 void MainWindow::onLoadWorkspace()
@@ -151,6 +146,7 @@ void MainWindow::onLoadWorkspace()
     if (!path.isEmpty()) {
         m_workspaceManager->load(path, m_scene, m_view);
         m_statusLabel->setText("Workspace loaded.");
+        m_stackedWidget->setCurrentWidget(m_view);
     }
 }
 

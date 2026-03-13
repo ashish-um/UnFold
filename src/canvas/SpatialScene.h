@@ -32,6 +32,14 @@ public:
     bool isInActiveBranch(const NodeItem *node) const;
     LayoutEngine *layoutEngine() const { return m_layoutEngine; }
 
+    struct SavedNodeState {
+        QPointF pos;
+        bool isExpanded;
+    };
+    void setSavedNodeState(const QString &path, const QPointF &pos, bool expanded);
+    void clearSavedNodeStates();
+    void applySavedState(NodeItem *node);
+
 signals:
     void nodeSelected(const QString &path);
     void statusMessage(const QString &msg);
@@ -53,6 +61,7 @@ private:
 
     QHash<QString, NodeItem *> m_nodeMap;  // path -> node
     NodeItem *m_activeExpandedNode = nullptr;
+    QHash<QString, SavedNodeState> m_savedNodeStates;
 
     QStringList m_navigationQueue;
     void processNavigationQueue();
