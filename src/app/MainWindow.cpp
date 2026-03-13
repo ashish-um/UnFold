@@ -6,7 +6,8 @@
 #include "filesystem/FileWatcher.h"
 #include "persistence/WorkspaceManager.h"
 #include "items/NodeItem.h"
-
+#include "persistence/SettingsManager.h"
+#include "app/SettingsView.h"
 #include <QAction>
 #include <QToolBar>
 #include <QStatusBar>
@@ -30,7 +31,14 @@ MainWindow::MainWindow(QWidget *parent)
     // Create the scene and view
     m_scene = new SpatialScene(m_fsWorker, m_fileWatcher, this);
     m_view = new SpatialView(m_scene, this);
-    setCentralWidget(m_view);
+
+    // Create the stacked widget and setting view
+    m_stackedWidget = new QStackedWidget(this);
+    m_settingsView = new SettingsView(this);
+    m_stackedWidget->addWidget(m_view);
+    m_stackedWidget->addWidget(m_settingsView);
+
+    setCentralWidget(m_stackedWidget);
 
     // Create the minimap overlay
     m_miniMap = new MiniMap(m_scene, m_view, m_view);
@@ -42,7 +50,7 @@ MainWindow::MainWindow(QWidget *parent)
     setupStatusBar();
     setupConnections();
 
-    // Spawn initial drive nodes
+    // Spawn initial drive nodes (or start directory)
     m_scene->spawnDriveNodes();
 }
 
@@ -87,6 +95,12 @@ void MainWindow::setupToolBar()
     QAction *collapseAction = toolbar->addAction("⊟ Collapse All");
     collapseAction->setToolTip("Collapse all expanded nodes");
     connect(collapseAction, &QAction::triggered, this, &MainWindow::onCollapseAll);
+
+    toolbar->addSeparator();
+
+    QAction *settingsAction = toolbar->addAction("⚙ Settings");
+    settingsAction->setToolTip("Open settings");
+    connect(settingsAction, &QAction::triggered, this, &MainWindow::onOpenSettings);
 }
 
 void MainWindow::setupStatusBar()
@@ -111,6 +125,7 @@ void MainWindow::setupConnections()
     connect(m_scene, &SpatialScene::nodeSelected, this, &MainWindow::onNodeSelected);
     connect(m_scene, &SpatialScene::statusMessage, m_statusLabel, &QLabel::setText);
     connect(m_scene, &QGraphicsScene::selectionChanged, this, &MainWindow::onSelectionChanged);
+    connect(m_settingsView, &SettingsView::backRequested, this, &MainWindow::onCloseSettings);
 }
 
 void MainWindow::onNavigateHome()
@@ -143,6 +158,18 @@ void MainWindow::onCollapseAll()
 {
     m_scene->collapseAll();
     m_statusLabel->setText("All nodes collapsed.");
+}
+
+void MainWindow::onOpenSettings()
+{
+    m_stackedWidget->setCurrentWidget(m_settingsView);
+    m_statusLabel->setText("Settings opened.");
+}
+
+void MainWindow::onCloseSettings()
+{
+    m_stackedWidget->setCurrentWidget(m_view);
+    m_statusLabel->setText("Settings updated.");
 }
 
 void MainWindow::onNodeSelected(const QString &path)

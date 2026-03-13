@@ -30,14 +30,14 @@ FilesystemWorker::~FilesystemWorker()
     m_workerThread.wait();
 }
 
-void FilesystemWorker::fetchDirectory(const QString &path, int offset)
+void FilesystemWorker::fetchDirectory(const QString &path, int offset, bool showHidden)
 {
-    emit requestRead(path, offset, BATCH_SIZE);
+    emit requestRead(path, offset, BATCH_SIZE, showHidden);
 }
 
 // --- DirectoryReader ---
 
-void DirectoryReader::readDirectory(const QString &path, int offset, int batchSize)
+void DirectoryReader::readDirectory(const QString &path, int offset, int batchSize, bool showHidden)
 {
     QDir dir(path);
     if (!dir.exists()) {
@@ -50,7 +50,10 @@ void DirectoryReader::readDirectory(const QString &path, int offset, int batchSi
         return;
     }
 
-    QDir::Filters filters = QDir::AllEntries | QDir::NoDotAndDotDot | QDir::System | QDir::Hidden;
+    QDir::Filters filters = QDir::AllEntries | QDir::NoDotAndDotDot | QDir::System;
+    if (showHidden) {
+        filters |= QDir::Hidden;
+    }
     QDir::SortFlags sortFlags = QDir::DirsFirst | QDir::Name | QDir::IgnoreCase;
 
     QFileInfoList allEntries = dir.entryInfoList(filters, sortFlags);

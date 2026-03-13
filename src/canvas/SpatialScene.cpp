@@ -5,6 +5,7 @@
 #include "filesystem/FileWatcher.h"
 #include "layout/LayoutEngine.h"
 
+#include "persistence/SettingsManager.h"
 #include <QDir>
 #include <QStorageInfo>
 
@@ -37,8 +38,23 @@ SpatialScene::~SpatialScene()
 
 void SpatialScene::spawnDriveNodes()
 {
-    const auto volumes = QStorageInfo::mountedVolumes();
+    QString defaultDir = SettingsManager::instance().defaultDirectory();
     double xOffset = 0;
+
+    if (!defaultDir.isEmpty() && defaultDir != QDir::rootPath()) {
+        QDir dir(defaultDir);
+        if (dir.exists()) {
+            QFileInfo info(defaultDir);
+            NodeItem *startNode = createNode(info, nullptr);
+            startNode->setPos(0, 0);
+            startNode->setIsDrive(true);
+            startNode->setLabel(info.fileName().isEmpty() ? defaultDir : info.fileName() + " (" + defaultDir + ")");
+            expandNode(startNode);
+            return;
+        }
+    }
+
+    const auto volumes = QStorageInfo::mountedVolumes();
 
     for (const QStorageInfo &vol : volumes) {
         if (!vol.isValid() || !vol.isReady())
@@ -83,6 +99,7 @@ void SpatialScene::resetToHome()
 
     // Re-spawn fresh drive nodes at origin
     spawnDriveNodes();
+    m_navigationQueue.clear();
 }
 
 void SpatialScene::expandNode(NodeItem *node)
@@ -107,7 +124,7 @@ void SpatialScene::expandNode(NodeItem *node)
     m_fileWatcher->watchDirectory(node->filePath());
 
     // Fetch contents asynchronously
-    m_fsWorker->fetchDirectory(node->filePath());
+    m_fsWorker->fetchDirectory(node->filePath(), 0, SettingsManager::instance().showHiddenItems());
 }
 
 void SpatialScene::collapseNode(NodeItem *node)
@@ -147,7 +164,46 @@ void SpatialScene::collapseAll()
     for (NodeItem *root : roots) {
         collapseNode(root);
     }
+    m_navigationQueue.clear();
     update();
+}
+
+void SpatialScene::navigatePath(const QString &path)
+{
+    QString nativePath = QDir::toNativeSeparators(path);
+    QDir dir(nativePath);
+    if (!dir.exists()) return;
+
+    QStringList pathParts;
+    QString current = nativePath;
+    while (!current.isEmpty()) {
+        pathParts.prepend(current);
+        QString parent = QFileInfo(current).absolutePath();
+        if (parent == current) break; // root
+        current = parent;
+    }
+
+    m_navigationQueue = pathParts;
+    processNavigationQueue();
+}
+
+void SpatialScene::processNavigationQueue()
+{
+    if (m_navigationQueue.isEmpty()) return;
+
+    QString nextPath = m_navigationQueue.first();
+    NodeItem *node = nodeForPath(nextPath);
+    
+    if (node) {
+        m_navigationQueue.removeFirst();
+        if (!node->isExpanded()) {
+            expandNode(node);
+        } else {
+            // Already expanded. Process next.
+            processNavigationQueue();
+        }
+    }
+    // If node is not found, wait for onDirectoryLoaded
 }
 
 NodeItem *SpatialScene::nodeForPath(const QString &path) const
@@ -201,6 +257,10 @@ void SpatialScene::onDirectoryLoaded(const QString &path, const QList<QFileInfo>
     QString msg = QString("Loaded %1 items from %2").arg(count).arg(path);
     if (hasMore) msg += " (more available)";
     emit statusMessage(msg);
+
+    if (!m_navigationQueue.isEmpty()) {
+        processNavigationQueue();
+    }
 }
 
 void SpatialScene::onDirectoryError(const QString &path, const QString &error)
@@ -210,6 +270,7 @@ void SpatialScene::onDirectoryError(const QString &path, const QString &error)
         node->setPermissionDenied(true);
         node->setExpanded(false);
     }
+    m_navigationQueue.clear();
     emit statusMessage("Error: " + error);
 }
 

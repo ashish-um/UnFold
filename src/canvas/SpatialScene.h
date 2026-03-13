@@ -23,6 +23,7 @@ public:
     void expandNode(NodeItem *node);
     void collapseNode(NodeItem *node);
     void collapseAll();
+    void navigatePath(const QString &path);
 
     NodeItem *nodeForPath(const QString &path) const;
     QList<NodeItem *> allNodes() const;
@@ -52,4 +53,7 @@ private:
 
     QHash<QString, NodeItem *> m_nodeMap;  // path -> node
     NodeItem *m_activeExpandedNode = nullptr;
+
+    QStringList m_navigationQueue;
+    void processNavigationQueue();
 };

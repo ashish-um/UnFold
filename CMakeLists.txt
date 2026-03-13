@@ -20,6 +20,7 @@ set(SOURCES
     src/filesystem/FileWatcher.cpp
     src/layout/LayoutEngine.cpp
     src/persistence/WorkspaceManager.cpp
+    src/app/SettingsView.cpp
 )
 
 set(HEADERS
@@ -33,6 +34,8 @@ set(HEADERS
     src/filesystem/FileWatcher.h
     src/layout/LayoutEngine.h
     src/persistence/WorkspaceManager.h
+    src/persistence/SettingsManager.h
+    src/app/SettingsView.h
 )
 
 set(RESOURCES

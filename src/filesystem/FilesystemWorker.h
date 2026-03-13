@@ -16,13 +16,13 @@ public:
 
     static constexpr int BATCH_SIZE = 100;
 
-    void fetchDirectory(const QString &path, int offset = 0);
+    void fetchDirectory(const QString &path, int offset = 0, bool showHidden = false);
 
 signals:
     void directoryLoaded(const QString &path, const QList<QFileInfo> &entries, bool hasMore);
     void directoryError(const QString &path, const QString &error);
     // Internal signal to forward request to worker thread
-    void requestRead(const QString &path, int offset, int batchSize);
+    void requestRead(const QString &path, int offset, int batchSize, bool showHidden);
 
 private:
     QThread m_workerThread;
@@ -35,7 +35,7 @@ class DirectoryReader : public QObject
     Q_OBJECT
 
 public slots:
-    void readDirectory(const QString &path, int offset, int batchSize);
+    void readDirectory(const QString &path, int offset, int batchSize, bool showHidden);
 
 signals:
     void directoryLoaded(const QString &path, const QList<QFileInfo> &entries, bool hasMore);
