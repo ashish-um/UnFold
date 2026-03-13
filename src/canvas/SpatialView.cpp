@@ -50,6 +50,7 @@ void SpatialView::wheelEvent(QWheelEvent *event)
     QPointF delta = scenePosAfter - scenePosBefore;
     translate(delta.x(), delta.y());
 
+    emit viewChanged();
     event->accept();
 }
 
@@ -99,6 +100,9 @@ void SpatialView::mouseMoveEvent(QMouseEvent *event)
 void SpatialView::mouseReleaseEvent(QMouseEvent *event)
 {
     if (m_isPanning) {
+        if (m_didPan) {
+            emit viewChanged();
+        }
         m_isPanning = false;
         setCursor(Qt::ArrowCursor);
         event->accept();

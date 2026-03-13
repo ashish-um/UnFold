@@ -10,13 +10,14 @@
 #include <QDir>
 #include <QStandardPaths>
 #include <QTransform>
+#include <QtConcurrent>
 
 WorkspaceManager::WorkspaceManager(QObject *parent)
     : QObject(parent)
 {
 }
 
-QString WorkspaceManager::save(const QString &filePath, SpatialScene *scene, SpatialView *view)
+void WorkspaceManager::save(const QString &filePath, SpatialScene *scene, SpatialView *view)
 {
     QJsonObject root;
     root["version"] = 1;
@@ -48,18 +49,26 @@ QString WorkspaceManager::save(const QString &filePath, SpatialScene *scene, Spa
     }
     root["nodes"] = nodesArray;
 
-    // Write to file
+    // Serialize JSON synchronously on main thread
     QJsonDocument doc(root);
-    QFile file(filePath);
-    int lineCount = 0;
-    if (file.open(QIODevice::WriteOnly)) {
-        QByteArray jsonBytes = doc.toJson();
-        file.write(jsonBytes);
-        file.close();
-        lineCount = jsonBytes.count('\n') + 1;
-    }
-    
-    return QString("Saved to %1 (%2 lines)").arg(filePath).arg(lineCount);
+    QByteArray jsonBytes = doc.toJson();
+
+    // Write to file asynchronously to avoid blocking UI
+    QtConcurrent::run([this, filePath, jsonBytes]() {
+        QFile file(filePath);
+        int lineCount = 0;
+        if (file.open(QIODevice::WriteOnly)) {
+            file.write(jsonBytes);
+            file.close();
+            lineCount = jsonBytes.count('\n') + 1;
+            
+            // Emit success via cross-thread queued event back to main thread
+            QString statusMessage = QString("Saved to %1 (%2 lines)").arg(filePath).arg(lineCount);
+            emit saveFinished(statusMessage);
+        } else {
+            emit saveFinished(QString("Failed to save workspace to %1").arg(filePath));
+        }
+    });
 }
 
 void WorkspaceManager::load(const QString &filePath, SpatialScene *scene, SpatialView *view)
@@ -116,13 +125,14 @@ void WorkspaceManager::load(const QString &filePath, SpatialScene *scene, Spatia
     scene->resetToHome();
 }
 
-QString WorkspaceManager::autoSave(SpatialScene *scene, SpatialView *view)
+void WorkspaceManager::autoSave(SpatialScene *scene, SpatialView *view)
 {
     QString path = autoSavePath();
     if (!path.isEmpty()) {
-        return save(path, scene, view);
+        save(path, scene, view);
+    } else {
+        emit saveFinished("Failed to determine save path.");
     }
-    return QString("Failed to determine save path.");
 }
 
 bool WorkspaceManager::autoLoad(SpatialScene *scene, SpatialView *view)

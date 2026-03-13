@@ -15,6 +15,9 @@ public:
     void resetView();
     qreal currentZoom() const { return m_zoomLevel; }
 
+signals:
+    void viewChanged();
+
 protected:
     void wheelEvent(QWheelEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;

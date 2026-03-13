@@ -71,6 +71,7 @@ public:
 signals:
     void clicked(NodeItem *node);
     void doubleClicked(NodeItem *node);
+    void nodeMoved();
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;

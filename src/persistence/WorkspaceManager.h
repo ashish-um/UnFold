@@ -13,10 +13,13 @@ class WorkspaceManager : public QObject
 public:
     explicit WorkspaceManager(QObject *parent = nullptr);
 
-    QString save(const QString &filePath, SpatialScene *scene, SpatialView *view);
+    void save(const QString &filePath, SpatialScene *scene, SpatialView *view);
     void load(const QString &filePath, SpatialScene *scene, SpatialView *view);
-    QString autoSave(SpatialScene *scene, SpatialView *view);
+    void autoSave(SpatialScene *scene, SpatialView *view);
     bool autoLoad(SpatialScene *scene, SpatialView *view);
+
+signals:
+    void saveFinished(const QString &statusMessage);
 
 private:
     QString autoSavePath() const;

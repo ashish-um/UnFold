@@ -128,6 +128,8 @@ void SpatialScene::expandNode(NodeItem *node)
 
     // Fetch contents asynchronously
     m_fsWorker->fetchDirectory(node->filePath(), 0, SettingsManager::instance().showHiddenItems());
+    
+    emit layoutChanged();
 }
 
 void SpatialScene::collapseNode(NodeItem *node)
@@ -152,6 +154,7 @@ void SpatialScene::collapseNode(NodeItem *node)
     node->clearChildren();
 
     emit statusMessage("Collapsed: " + node->filePath());
+    emit layoutChanged();
 }
 
 void SpatialScene::collapseAll()
@@ -290,6 +293,8 @@ void SpatialScene::onDirectoryLoaded(const QString &path, const QList<QFileInfo>
     if (!m_navigationQueue.isEmpty()) {
         processNavigationQueue();
     }
+    
+    emit layoutChanged();
 }
 
 void SpatialScene::onDirectoryError(const QString &path, const QString &error)

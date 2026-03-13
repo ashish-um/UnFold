@@ -313,7 +313,11 @@ void NodeItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 
 void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
-    m_isDragging = false;
+    if (m_isDragging) {
+        m_isDragging = false;
+        // User finished dragging this node, so layout has changed
+        emit nodeMoved();
+    }
     QGraphicsObject::mouseReleaseEvent(event);
 }
 

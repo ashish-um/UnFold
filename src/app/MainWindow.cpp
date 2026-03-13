@@ -46,6 +46,11 @@ MainWindow::MainWindow(QWidget *parent)
     // Create workspace manager
     m_workspaceManager = new WorkspaceManager(this);
 
+    // Create auto-save debouncer timer
+    m_autoSaveTimer = new QTimer(this);
+    m_autoSaveTimer->setSingleShot(true);
+    m_autoSaveTimer->setInterval(2000); // 2 second debounce
+
     setupToolBar();
     setupStatusBar();
     setupConnections();
@@ -86,7 +91,9 @@ void MainWindow::setupToolBar()
 
     QAction *saveAction = toolbar->addAction("💾 Save");
     saveAction->setToolTip("Save current workspace");
-    connect(saveAction, &QAction::triggered, this, &MainWindow::onSaveWorkspace);
+    connect(saveAction, &QAction::triggered, this, [this]() {
+        m_workspaceManager->autoSave(m_scene, m_view);
+    });
 
     toolbar->addSeparator();
 
@@ -125,18 +132,26 @@ void MainWindow::setupConnections()
     connect(m_scene, &QGraphicsScene::selectionChanged, this, &MainWindow::onSelectionChanged);
     connect(m_settingsView, &SettingsView::backRequested, this, &MainWindow::onCloseSettings);
     connect(m_settingsView, &SettingsView::loadWorkspaceRequested, this, &MainWindow::onLoadWorkspace);
+
+    // Connect auto-save debouncing events
+    connect(m_view, &SpatialView::viewChanged, m_autoSaveTimer, static_cast<void (QTimer::*)()>(&QTimer::start));
+    connect(m_scene, &SpatialScene::layoutChanged, m_autoSaveTimer, static_cast<void (QTimer::*)()>(&QTimer::start));
+    connect(m_autoSaveTimer, &QTimer::timeout, this, &MainWindow::onAutoSaveTimeout);
+    
+    // Connect async saving signal back to status label
+    connect(m_workspaceManager, &WorkspaceManager::saveFinished, m_statusLabel, &QLabel::setText);
+}
+
+void MainWindow::onAutoSaveTimeout()
+{
+    // Silently kick off auto-save (doesn't overwrite m_statusLabel immediately until async finishes)
+    m_workspaceManager->autoSave(m_scene, m_view);
 }
 
 void MainWindow::onNavigateHome()
 {
     m_scene->resetToHome();
     m_view->resetView();
-}
-
-void MainWindow::onSaveWorkspace()
-{
-    QString status = m_workspaceManager->autoSave(m_scene, m_view);
-    m_statusLabel->setText(status);
 }
 
 void MainWindow::onLoadWorkspace()

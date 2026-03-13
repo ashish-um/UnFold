@@ -43,6 +43,7 @@ public:
 signals:
     void nodeSelected(const QString &path);
     void statusMessage(const QString &msg);
+    void layoutChanged();
 
 private slots:
     void onDirectoryLoaded(const QString &path, const QList<QFileInfo> &entries, bool hasMore);
