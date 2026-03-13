@@ -100,12 +100,7 @@ void NodeItem::paintNode(QPainter *painter, qreal lod)
         isDimmed = false;  // Always bright on hover
     }
 
-    // Apply dimming: darken color and reduce overall opacity
-    qreal dimOpacity = isDimmed ? 0.35 : 1.0;
-    if (isDimmed) {
-        bgColor = bgColor.darker(180);
-    }
-    painter->setOpacity(dimOpacity);
+    painter->setOpacity(1);
 
     // At very low LOD, just draw a colored dot
     if (lod < 0.2) {
